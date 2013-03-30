@@ -7,6 +7,7 @@
       body { height: 100%; margin: 0; padding: 0 }
       #map-canvas { height: 100% }
     </style>
+	<script type="text/javascript" src="http://cdnjs.cloudflare.com/ajax/libs/underscore.js/1.4.4/underscore-min.js"></script>
     <script type="text/javascript"
       src="https://maps.googleapis.com/maps/api/js?key=AIzaSyCgXZE6sc8rKvdglDKOFaDdexDMMTEuF-Y&sensor=true">
     </script>
@@ -24,22 +25,39 @@
 		console.log(map);
 			
 		google.maps.event.addListener(map, 'click', function(event) {
+			
+			// find out if click is on a marker
+			// if so, get marker, and call removeMarker(marker);
+			// otherwise...
 			placeMarker(event.latLng, map);
 		});	
       }
 	  
-	  var marker;
+	  var markers = [];
 
+	  function removeMarker(marker){
+		var toRemove;
+		_.forEach(markers,function(el, i){
+			if(el === marker) {
+				 toRemove = markers.splice(i,1);
+				 return false;
+			}
+		});
+	  }
+	  
 	function placeMarker(location, map) {
-		if ( marker ) {
-			marker.setPosition(location);
-		} else {
-			marker = new google.maps.Marker({
-				position: location,
-				map: map
-			});
-		}
+		var marker = new google.maps.Marker({
+			position: location,
+			map: map
+		});
+		google.maps.event.addListener(marker, 'rightclick',removeMarkerFromMap );
+		markers.push(marker);
 	}
+	
+	var removeMarkerFromMap = function(point, source, overlay) {
+		this.setMap(null);
+	};
+	
 		
 		google.maps.event.addDomListener(window, 'load', initialize);
 		

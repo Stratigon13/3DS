@@ -37,12 +37,13 @@
 
             var map = aMap;
             var paths = [];
-            var path
+            var path;
+            var start_pos = event.latLng
 
             g.event.addListener(map, 'click', function(event) {
                 createLineBeingDragged(map, event.latLng);
                 path = [];
-                var start_pos = event.latLng
+
             });
 
 
@@ -55,15 +56,18 @@
                 g.event.addListener(line, 'click', function(event) {
                     g.event.clearListeners(map, 'mousemove');
                     g.event.clearListeners(line, 'click');
-                    if (pos === event.latLng){
+                    if (start_pos === event.latLng){
                     createMarkersForLine(map, line);
                     } else {
-                        path.push(line)
+                        path.push(line);
                         createLineBeingDragged(map, event.latLng)
                     }
                 });
-                g.event.addListener(line, 'rightclick', function(event) {
-                    paths.push(path)
+                g.event.addListener(line,'rightclick',function(event){
+
+                    g.event.clearListeners(line, 'click');
+                    g.event.clearListeners(map,'mousemove')
+
                 });
 
                 function createMarkersForLine(map, line) {

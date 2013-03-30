@@ -36,14 +36,14 @@
         function registerMapDragHandler(aMap) {
  
             var map = aMap;
- 
+
             g.event.addListener(map, 'click', function(event) {
                 createLineBeingDragged(map, event.latLng);
             });
  
             function createLineBeingDragged(map, pos) {
                 var line = new g.Polyline({map: map, path: [pos, pos]});
-                g.event.addListener(map, 'mousemove', function(event) {
+                g.event.addListener(map, 'click', function(event) {
                     line.getPath().setAt(1, event.latLng);
                 });
                 g.event.addListener(line, 'click', function(event) {

@@ -1,0 +1,140 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta name="viewport" content="initial-scale=1.0, user-scalable=no"/>
+    <style type="text/css">
+        html {
+            height: 100%
+        }
+
+        body {
+            height: 100%;
+            margin: 0px;
+            padding: 0px
+        }
+
+        #map_canvas {
+            height: 100%
+        }
+    </style>
+    <script type="text/javascript"
+            src="http://maps.google.com/maps/api/js?libraries=geometry&sensor=false&v=3.3">
+    </script>
+    <script type="text/javascript">
+        var g = google.maps;
+        function initialize() {
+            var latlng = new g.LatLng(62.397, 12.644);
+            var myOptions = {
+                zoom: 4,
+                center: latlng,
+                mapTypeId: g.MapTypeId.ROADMAP
+            };
+            var map = new g.Map(document.getElementById("map_canvas"), myOptions);
+            registerMapDragHandler(map);
+        }
+
+        function registerMapDragHandler(aMap) {
+
+            var map = aMap;
+            var paths = [];
+            var path
+
+            g.event.addListener(map, 'click', function(event) {
+                createLineBeingDragged(map, event.latLng);
+                path = [];
+                var start_pos = event.latLng
+            });
+
+
+
+            function createLineBeingDragged(map, pos) {
+                var line = new g.Polyline({map: map, path: [pos, pos]});
+                g.event.addListener(map, 'mousemove', function(event) {
+                    line.getPath().setAt(1, event.latLng);
+                });
+                g.event.addListener(line, 'click', function(event) {
+                    g.event.clearListeners(map, 'mousemove');
+                    g.event.clearListeners(line, 'click');
+                    if (pos === event.latLng){
+                    createMarkersForLine(map, line);
+                    } else {
+                        path.push(line)
+                        createLineBeingDragged(map, event.latLng)
+                    }
+                });
+                g.event.addListener(line, 'rightclick', function(event) {
+                    paths.push(path)
+                });
+
+                function createMarkersForLine(map, line) {
+                        var startMarker = createMarker(line, 0);
+                        var endMarker = createMarker(line, 1);
+                        startMarker.nextMarker = endMarker;
+                        endMarker.previousMarker = startMarker;
+                }
+
+                function createMarker(line, pathPos) {
+                    var position = line.getPath().getAt(pathPos);
+                    var marker = new g.Marker({map: map, position: position, visible: true, flat: true, draggable: true, raiseOnDrag: false});
+
+                    // Marker functions
+                    marker.getPathIndex = function() {
+                        if (this.previousMarker != null) {
+                            return this.previousMarker.getPathIndex() + 1;
+                        } else {
+                            return 0;
+                        }
+                    }
+
+                    marker.startDrag = function(pos) {
+                        if (!marker.previousMarker || !marker.nextMarker) {
+                            line.getPath().insertAt(marker.getPathIndex(), pos);
+                            var newMarker = createMarker(line, marker.getPathIndex());
+                            if (marker.nextMarker) {
+                                newMarker.previousMarker = marker;
+                                newMarker.nextMarker = marker.nextMarker;
+                                newMarker.nextMarker.previousMarker = newMarker;
+                                marker.nextMarker = newMarker;
+                            } else {
+                                newMarker.nextMarker = marker;
+                                newMarker.previousMarker = marker.previousMarker;
+                                newMarker.previousMarker.nextMarker = newMarker;
+                                marker.previousMarker = newMarker;
+                            }
+                        }
+                    }
+
+                    marker.beingDragged = function() {
+                        line.getPath().setAt(marker.getPathIndex(), marker.getPosition());
+                    }
+
+                    // Listeners
+                    g.event.addListener(marker, 'dragstart', function(event) {
+                        marker.startDrag(event.latLng);
+                    });
+
+                    g.event.addListener(marker, 'drag', function(event) {
+                        marker.beingDragged();
+                    });
+
+                    g.event.addListener(marker, 'click', function(event) {
+                        var length = g.geometry.spherical.computeLength(line.getPath()) / 1000;
+                        var infoWindow = new g.InfoWindow(
+                                {
+                                    content: "<ul><li>Line length: " + length.toFixed(2) + " km</li>"+
+                                            "<li>Latitude: " + marker.getPosition().lat().toFixed(6) + "</li>"+
+                                            "<li>Longitude: " + marker.getPosition().lng().toFixed(6) + "</ul>"
+                                });
+                        infoWindow.open(map, marker);
+                    });
+
+                    return marker;
+                }
+            }
+        }
+    </script>
+</head>
+<body onload="initialize()">
+<div id="map_canvas" style="width:100%; height:100%"></div>
+</body>
+</html>
